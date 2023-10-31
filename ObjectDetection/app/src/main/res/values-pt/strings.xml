@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Detector de objetos</string>
+    <string name="action_settings">Configurações</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="camera_permission_granted">Acesso à câmera concedido</string>
+    <string name="camera_permission_denied">Acesso à câmera negado</string>
+</resources>

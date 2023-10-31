@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">ObjectDetection</string>
+    <string name="action_settings">Settings</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="camera_fragment_label" translatable="false">Camera Fragment</string>
+    <string name="camera_permission_granted">Camera access granted</string>
+    <string name="camera_permission_denied">Camera access denied</string>
+</resources>
