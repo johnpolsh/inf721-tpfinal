@@ -17,10 +17,10 @@ class PermissionsFragment : Fragment() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()
         ) { isGranted: Boolean ->
             if (isGranted) {
-                Toast.makeText(context, "Acesso à câmera concedido", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, resources.getString(R.string.camera_permission_granted), Toast.LENGTH_LONG).show()
                 navigateToCamera()
             } else {
-                Toast.makeText(context, "Acesso à câmera negado", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, resources.getString(R.string.camera_permission_denied), Toast.LENGTH_LONG).show()
                 ActivityCompat.finishAffinity(this.activity as MainActivity);
             }
         }

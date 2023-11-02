@@ -1,14 +1,16 @@
 package com.jopzoli.objectdetection
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import android.widget.Toast
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -17,20 +19,28 @@ import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.navigation.Navigation
 import com.jopzoli.objectdetection.databinding.FragmentCameraBinding
+import org.pytorch.LiteModuleLoader
+import org.pytorch.Module
+import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class CameraFragment : Fragment() {
+class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private val _cTAG0 = "ObjectDetection"
 
+    override lateinit var module: Module
     private var _fragmentCameraBinding: FragmentCameraBinding? = null
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private var imageAnalyzer: ImageAnalysis? = null
     private var preview: Preview? = null
+    private lateinit var objectDetectorHelper: ObjectDetectorHelper
     private lateinit var bitmapBuffer: Bitmap
     private lateinit var cameraExecutor: ExecutorService
 
@@ -41,6 +51,15 @@ class CameraFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        this.context?.let {
+            val mdl = load(it, "model.ptl")
+            if (mdl == null) {
+                Log.e(_cTAG0, "Couldn't load model from assets folder")
+                ActivityCompat.finishAffinity(this.activity as MainActivity)
+            } else
+                module = mdl
+        }
+
         _fragmentCameraBinding = FragmentCameraBinding.inflate(inflater, container, false)
         return fragmentCameraBinding.root
     }
@@ -49,10 +68,6 @@ class CameraFragment : Fragment() {
         _fragmentCameraBinding = null
         super.onDestroyView()
         cameraExecutor.shutdown()
-    }
-
-    override fun onPause() {
-        super.onPause()
     }
 
     override fun onResume() {
@@ -69,6 +84,8 @@ class CameraFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        objectDetectorHelper = ObjectDetectorHelper(requireContext(), this)
+
         cameraExecutor = Executors.newSingleThreadExecutor()
         fragmentCameraBinding.viewFinder.post {
             setUpCamera()
@@ -77,7 +94,6 @@ class CameraFragment : Fragment() {
 
     @SuppressLint("UnsafeOptInUsageError")
     private fun bindCameraUseCases() {
-
         // CameraProvider
         val cameraProvider =
             cameraProvider ?: throw IllegalStateException("Camera initialization failed.")
@@ -89,14 +105,14 @@ class CameraFragment : Fragment() {
         // Preview. Only using the 4:3 ratio because this is the closest to our models
         preview =
             Preview.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
                 .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
                 .build()
 
         // ImageAnalysis. Using RGBA 8888 to match how our models work
         imageAnalyzer =
             ImageAnalysis.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
                 .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(OUTPUT_IMAGE_FORMAT_RGBA_8888)
@@ -122,8 +138,8 @@ class CameraFragment : Fragment() {
         try {
             camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
             preview?.setSurfaceProvider(fragmentCameraBinding.viewFinder.surfaceProvider)
-        } catch (exc: Exception) {
-            Log.e(_cTAG0, "Use case binding failed", exc)
+        } catch (e: Exception) {
+            Log.e(_cTAG0, "Use case binding failed", e)
         }
     }
 
@@ -133,7 +149,7 @@ class CameraFragment : Fragment() {
 
         val imageRotation = image.imageInfo.rotationDegrees
         // Pass Bitmap and rotation to the object detector helper for processing and detection
-//        objectDetectorHelper.detect(bitmapBuffer, imageRotation)
+        objectDetectorHelper.detect(bitmapBuffer, imageRotation)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -141,18 +157,27 @@ class CameraFragment : Fragment() {
         imageAnalyzer?.targetRotation = fragmentCameraBinding.viewFinder.display.rotation
     }
 
-//    override fun onError(error: String) {
-//        activity?.runOnUiThread {
-//            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
-//        }
-//    }
-//
-//    override fun onResults(
-//        results: MutableList<Detection>?,
-//        inferenceTime: Long,
-//        imageHeight: Int,
-//        imageWidth: Int
-//    ) {
+    override fun onError(msg: String) {
+        activity?.runOnUiThread {
+            Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onResult(
+        results: MutableList<String>,
+        inferenceTime: Long,
+        imgWidth: Long,
+        imgHeight: Long
+    ) {
+        Log.i(_cTAG0, inferenceTime.toString())
+        Log.i(_cTAG0, results[0])
+        activity?.runOnUiThread {
+            val textView = activity?.findViewById<TextView>(R.id.output_class)
+            if (textView != null) {
+                textView.text = results[0]
+            }
+        }
+
 //        activity?.runOnUiThread {
 //            fragmentCameraBinding.bottomSheetLayout.inferenceTimeVal.text =
 //                String.format("%d ms", inferenceTime)
@@ -167,7 +192,7 @@ class CameraFragment : Fragment() {
 //            // Force a redraw
 //            fragmentCameraBinding.overlay.invalidate()
 //        }
-//    }
+    }
 
     private fun setUpCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
@@ -178,5 +203,39 @@ class CameraFragment : Fragment() {
             },
             ContextCompat.getMainExecutor(requireContext())
         )
+    }
+
+    companion object ModuleLoaderHelper {
+        private const val _cTAG0 = "CameraFragment.ModuleLoaderHelper"
+        fun load(context: Context, name: String): Module? {
+            var filePath: String = name
+            try {
+                filePath = getFilePath(context, name)
+                return LiteModuleLoader.load(filePath)
+            } catch (e: Exception) {
+                Log.e(_cTAG0, "Couldn't load torch model from file $filePath", e)
+            }
+
+            return null
+        }
+
+        private fun getFilePath(context: Context, name: String): String {
+            val file: File = File(context.filesDir, name)
+            if (file.exists() && file.length() > 0) {
+                return file.absolutePath
+            }
+
+            context.assets.open(name).use { `is` ->
+                FileOutputStream(file).use { os ->
+                    val buffer = ByteArray(4 * 1024)
+                    var read: Int
+                    while (`is`.read(buffer).also { read = it } != -1) {
+                        os.write(buffer, 0, read)
+                    }
+                    os.flush()
+                }
+                return file.absolutePath
+            }
+        }
     }
 }
