@@ -6,22 +6,30 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.Navigation
 
 class PermissionsFragment : Fragment() {
+
     private val requestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
         ) { isGranted: Boolean ->
             if (isGranted) {
-                Toast.makeText(context, resources.getString(R.string.camera_permission_granted), Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    context,
+                    context?.let { ContextCompat.getString(it, R.string.camera_access_granted) },
+                    Toast.LENGTH_LONG
+                ).show()
                 navigateToCamera()
             } else {
-                Toast.makeText(context, resources.getString(R.string.camera_permission_denied), Toast.LENGTH_LONG).show()
-                ActivityCompat.finishAffinity(this.activity as MainActivity);
+                Toast.makeText(
+                    context,
+                    context?.let { ContextCompat.getString(it, R.string.camera_access_denied) },
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
 
@@ -34,24 +42,27 @@ class PermissionsFragment : Fragment() {
             ) -> {
                 navigateToCamera()
             }
+
             else -> {
                 requestPermissionLauncher.launch(
-                    Manifest.permission.CAMERA)
+                    Manifest.permission.CAMERA
+                )
             }
         }
     }
 
     private fun navigateToCamera() {
         lifecycleScope.launchWhenStarted {
-            Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main)
-                .navigate(R.id.action_permissions_to_camera)
+            Navigation.findNavController(requireActivity(), R.id.fragment_container).navigate(
+                R.id.camera_fragment
+            )
         }
     }
 
     companion object {
-        private val _cPERMISSIONSREQUIRED0 = arrayOf(Manifest.permission.CAMERA)
+        private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.CAMERA)
 
-        fun hasPermissions(context: Context) = _cPERMISSIONSREQUIRED0.all {
+        fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
     }

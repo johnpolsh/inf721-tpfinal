@@ -3,36 +3,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/camera_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:keepScreenOn="true">
+    android:layout_height="match_parent">
 
     <androidx.camera.view.PreviewView
         android:id="@+id/view_finder"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:scaleType="fitStart" >
-    </androidx.camera.view.PreviewView>
+        app:scaleType="fillStart" />
 
-    <TextView
-        android:id="@+id/output_class"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/output_default"
-        android:translationX="80dp"
-        android:translationY="600dp" />
-
-    <androidx.appcompat.widget.Toolbar
+    <com.jopzoli.objectdetection.DetectionView
+        android:id="@+id/overlay"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_capture"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginVertical="16dp"
-            app:srcCompat="@android:drawable/ic_menu_search" />
-    </androidx.appcompat.widget.Toolbar>
+        android:layout_height="match_parent" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

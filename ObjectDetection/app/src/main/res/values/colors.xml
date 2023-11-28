@@ -2,4 +2,7 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="detection_box_stroke">#FFB300</color>
+    <color name="detection_label_bk">#000000</color>
+    <color name="detection_label_text">#FFFFFF</color>
 </resources>
