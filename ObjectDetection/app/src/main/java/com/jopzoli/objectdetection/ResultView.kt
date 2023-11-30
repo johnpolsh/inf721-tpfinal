@@ -46,7 +46,7 @@ class DetectionView(context: Context?, attrs: AttributeSet?) : View(context, att
             labelBkPath.addRect(rect, Path.Direction.CW)
             canvas.drawPath(labelBkPath, labelBkPaint)
 
-//            val label = PrePostProcessor.labels[detection.classIdx]
+//            val label = MainActivity.labels[detection.classIdx]
             val label = "<none>"
             val score = detection.score
             canvas.drawText(

@@ -4,12 +4,12 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.SystemClock
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -26,14 +26,18 @@ import com.jopzoli.objectdetection.databinding.FragmentCameraBinding
 import org.pytorch.IValue
 import org.pytorch.Module
 import org.pytorch.torchvision.TensorImageUtils
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
 
 class ObjectDetector(
     private val module: Module,
     private val listener: Listener
 ) {
     private val _cTAG0 = "ObjectDetection.ObjectDetector"
+
+    private var lastTime: Long = 0
 
     private fun preProcess(bitmap: Bitmap, imageRotation: Int): Bitmap {
         return Bitmap.createScaledBitmap(
@@ -45,6 +49,9 @@ class ObjectDetector(
     }
 
     fun detect(image: Bitmap, imageRotation: Int) {
+        if (SystemClock.uptimeMillis() - lastTime < 3000)
+            return
+        lastTime = SystemClock.uptimeMillis()
         var inferenceTime = SystemClock.uptimeMillis()
         val inputBitmap = preProcess(image, imageRotation)
         val input = TensorImageUtils.bitmapToFloat32Tensor(
@@ -106,8 +113,12 @@ class CameraFragment : Fragment(), ObjectDetector.Listener {
     private var imageAnalyzer: ImageAnalysis? = null
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
+    private var lastDetection: Int = 0
+    private var lastDetectionCount: Int = 0
 
     private lateinit var cameraExecutor: ExecutorService
+
+    private lateinit var tts: TextToSpeech
 
     override var imgScaleX = 1f
     override var imgScaleY = 1f
@@ -216,6 +227,16 @@ class CameraFragment : Fragment(), ObjectDetector.Listener {
         savedInstanceState: Bundle?
     ): View {
         _fragmentCameraBinding = FragmentCameraBinding.inflate(inflater, container, false)
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val result = tts.setLanguage(Locale.getDefault())
+                if (result == TextToSpeech.LANG_MISSING_DATA ||
+                    result == TextToSpeech.LANG_NOT_SUPPORTED
+                ) {
+                    Log.e(_cTAG0, "This Language is not supported")
+                }
+            } else Log.e(_cTAG0, "TTS initialization Failed")
+        }
 
         return fragmentCameraBinding.root
     }
@@ -230,9 +251,25 @@ class CameraFragment : Fragment(), ObjectDetector.Listener {
         results: ArrayList<Detection>?,
         inferenceTime: Long
     ) {
+        results?.sortBy {
+            it.score
+        }
         activity?.runOnUiThread {
-            fragmentCameraBinding.overlay.setDetectionResults(results ?: ArrayList())
+            fragmentCameraBinding.overlay.setDetectionResults(ArrayList())
             fragmentCameraBinding.overlay.invalidate()
+//            fragmentCameraBinding.inferenceTime.setText
+            if (results != null) {
+                if (results.size != 0) {
+                    var speak = MainActivity.classes[results[0].classIdx]
+                    if (results[0].classIdx == 0 && (0 .. 4).random() <= 1)
+                        speak += " bonita"
+                    tts.speak(
+                        MainActivity.classes[results[0].classIdx],
+                        TextToSpeech.QUEUE_ADD,
+                        null
+                    )
+                }
+            }
         }
     }
 
