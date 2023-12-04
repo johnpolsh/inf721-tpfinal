@@ -23,7 +23,7 @@ class PrePostProcessor {
 
         private const val OUTPUT_ROW = 25200
         private const val OUTPUT_COL = 85
-        private const val THRESHOLD = .6f
+        private const val THRESHOLD = .4f
         private const val TIMEOUT = 15
 
         private fun nonMaxSuppression(

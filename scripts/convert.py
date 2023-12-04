@@ -1,3 +1,4 @@
+# Useful scripts for converting the trained model to Pytorch Lite
 import torch
 from torch.utils.mobile_optimizer import optimize_for_mobile
 

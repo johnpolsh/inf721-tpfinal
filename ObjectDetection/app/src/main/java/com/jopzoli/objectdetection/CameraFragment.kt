@@ -257,14 +257,12 @@ class CameraFragment : Fragment(), ObjectDetector.Listener {
         activity?.runOnUiThread {
             fragmentCameraBinding.overlay.setDetectionResults(ArrayList())
             fragmentCameraBinding.overlay.invalidate()
-//            fragmentCameraBinding.inferenceTime.setText
             if (results != null) {
                 if (results.size != 0) {
-                    var speak = MainActivity.classes[results[0].classIdx]
-                    if (results[0].classIdx == 0 && (0 .. 4).random() <= 1)
-                        speak += " bonita"
+                    Log.i(_cTAG0, results[0].classIdx.toString())
+                    val speak = MainActivity.classes[results[0].classIdx]
                     tts.speak(
-                        MainActivity.classes[results[0].classIdx],
+                        speak,
                         TextToSpeech.QUEUE_ADD,
                         null
                     )
