@@ -14,4 +14,4 @@ pip install torch==2.0.1+cu118 torchvision torchaudio --index-url https://downlo
 - Training: run the script `scripts/inf721_train.py`. The trained model will be saved on the file 'last-run.pth' with useful information for resuming training. Notice the defined number of epochs is 50, if you plan to train for more epochs, go the the line 70 of the file and change it.
 - Inference: run the script `scripts/inf721_inference.py`. The trained model will be loaded from the file 'last-run.pth', so make sure to have an valid file trained using the training script.
 
-If you prefer, you can try running the notebook `Object_detection_model.ipynb` on [Colab](https://colab.research.google.com/github/johnpolsh/inf721-tpfinal/blob/main/colab/Object_detection_model.ipynb).
+If you prefer, you can try running the notebook `Object_detection_model.ipynb` on [Colab](https://colab.research.google.com/github/johnpolsh/inf721-tpfinal/blob/main/scripts/Object_detection_model.ipynb).
